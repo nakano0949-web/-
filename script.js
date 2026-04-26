@@ -2,7 +2,7 @@ let currentBlocks = [];
 let currentType = "";
 let currentP = 0;
 
-// Finite Geometry Algorithm
+// アルゴリズム本体
 function rebuildPlanes(p, type) {
   const q = p * p + p + 1;
   const array = Array.from({ length: q }, (_, i) => i);
@@ -10,10 +10,8 @@ function rebuildPlanes(p, type) {
   for (let i = 1; i <= p; i++) {
     array1[i - 1] = array.filter(v => p * (i + 1) >= v && p * i < v);
   }
-
   const proj = [];
   const aff = [];
-
   for (let num = 1; num < q; num += p) {
     const datan = [0];
     const dataa = [];
@@ -24,7 +22,6 @@ function rebuildPlanes(p, type) {
     proj.push(datan);
     aff.push(dataa);
   }
-
   for (let i = 0; i < p; i++) {
     for (let num = 0; num < p; num++) {
       const n = idx => array1[idx][(num + i * idx) % array1[idx].length];
@@ -39,7 +36,6 @@ function rebuildPlanes(p, type) {
       aff.push(adata);
     }
   }
-
   if (type === "affine") {
     aff.shift();
     return { blocks: aff, count: p * p };
@@ -48,14 +44,14 @@ function rebuildPlanes(p, type) {
   }
 }
 
-// Button Click Event
+// ボタンを押した時の処理
 function generate() {
-  const pElem = document.getElementById("pSelect");
-  const tElem = document.getElementById("planeType");
-  if (!pElem || !tElem) return;
+  const pSelect = document.getElementById("pSelect");
+  const planeType = document.getElementById("planeType");
+  if(!pSelect || !planeType) return;
 
-  currentP = Number(pElem.value);
-  currentType = tElem.value;
+  currentP = Number(pSelect.value);
+  currentType = planeType.value;
   const isEn = document.documentElement.lang === "en";
   
   const result = rebuildPlanes(currentP, currentType);
@@ -69,7 +65,7 @@ function generate() {
     tr.innerHTML = `
       <td>${i}</td>
       <td><select class="fam-sel"><option value="">${isEn ? 'Select▼' : '選択▼'}</option>${familyCandidates.map(f=>`<option value="${f}">${f}</option>`).join("")}</select></td>
-      <td><select class="veg-sel"><option value="">${isEn ? '(Choose Family First)' : '（科を選んでください）'}</option></select></td>
+      <td><select class="veg-sel"><option value="">${isEn ? '(Choose Family)' : '（科を選択）'}</option></select></td>
     `;
     
     const famSel = tr.querySelector(".fam-sel");
@@ -77,28 +73,23 @@ function generate() {
     
     famSel.addEventListener("change", () => {
       const fam = famSel.value;
-      const veggies = (typeof familyToVeg !== 'undefined') ? familyToVeg[fam] : [];
-      vegSel.innerHTML = (veggies || []).map(v=>`<option value="${v}">${v}</option>`).join("") || `<option value="">N/A</option>`;
+      const veggies = familyToVeg[fam] || [];
+      vegSel.innerHTML = veggies.map(v=>`<option value="${v}">${v}</option>`).join("") || `<option value="">N/A</option>`;
       showFamilyInfo(fam);
     });
-    
     tbody.appendChild(tr);
   }
   document.getElementById("setupArea").style.display = "block";
-  document.getElementById("rotation").innerHTML = "";
 }
 
 function showFamilyInfo(fam) {
   const box = document.getElementById("familyInfoBox");
-  if (typeof familyInfo === 'undefined' || !familyInfo[fam]) { 
-    box.style.display = "none"; 
-    return; 
-  }
+  if (!familyInfo[fam]) { box.style.display = "none"; return; }
   const info = familyInfo[fam];
   const isEn = document.documentElement.lang === "en";
   box.innerHTML = isEn 
-    ? `<b>【${fam} Info】</b> Char: ${info.desc} | Soil: ${info.soil}`
-    : `<b>【${fam}の情報】</b> 特徴: ${info.desc} | 土壌: ${info.soil}`;
+    ? `<b>【${fam}】</b> ${info.desc} | Soil: ${info.soil}`
+    : `<b>【${fam}の情報】</b> ${info.desc} | 土壌: ${info.soil}`;
   box.style.display = "block";
 }
 
@@ -106,7 +97,6 @@ function makeSchedule() {
   const isEn = document.documentElement.lang === "en";
   const vegElements = Array.from(document.querySelectorAll(".veg-sel"));
   const famElements = Array.from(document.querySelectorAll(".fam-sel"));
-  
   const vegData = vegElements.map((sel, idx) => ({
     name: sel.value || (isEn ? `Plot ${idx}` : `区画${idx}`),
     family: famElements[idx].value
@@ -114,22 +104,17 @@ function makeSchedule() {
 
   const ul = document.getElementById("rotation");
   ul.innerHTML = "";
-
-  let soilBalances = new Array(currentBlocks[0].length * currentBlocks.length).fill(0); // Simple fix for length
+  let soilBalances = new Array(vegData.length).fill(0);
 
   currentBlocks.forEach((block, y) => {
     block.forEach(pIdx => {
       const fam = vegData[pIdx].family;
-      if (typeof familyStats !== 'undefined' && familyStats[fam]) {
-        soilBalances[pIdx] += familyStats[fam].n_score;
-      }
+      if (familyStats[fam]) soilBalances[pIdx] += familyStats[fam].n_score;
     });
 
     const li = document.createElement("li");
-    const label = isEn ? `Block ${y+1}` : `${y+1}年目/ブロック`;
+    const label = isEn ? `Cycle ${y+1}` : `${y+1}番目のサイクル`;
     li.textContent = `【${label}】\n` + block.map(id => vegData[id].name).join(" → ");
     ul.appendChild(li);
   });
-  
-  // Re-run analysis logic if needed...
 }
