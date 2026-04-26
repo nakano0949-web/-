@@ -2,7 +2,19 @@ let currentBlocks = [];
 let currentType = "";
 let currentP = 0;
 
-// 数学アルゴリズム
+// 【全言語共通】地力スコアデータ
+const commonFamilyStats = {
+    "ナス科": { n_score: 15 }, "Solanaceae": { n_score: 15 },
+    "アブラナ科": { n_score: 12 }, "Brassicaceae": { n_score: 12 },
+    "マメ科": { n_score: -10 }, "Fabaceae": { n_score: -10 },
+    "イネ科": { n_score: 5 }, "Poaceae": { n_score: 5 },
+    "ウリ科": { n_score: 10 }, "Cucurbitaceae": { n_score: 10 },
+    "ヒガンバナ科": { n_score: 2 }, "Amaryllidaceae": { n_score: 2 },
+    "キク科": { n_score: 3 }, "Asteraceae": { n_score: 3 },
+    "セリ科": { n_score: 4 }, "Apiaceae": { n_score: 4 },
+    "ヒユ科": { n_score: 6 }, "Amaranthaceae": { n_score: 6 }
+};
+
 function rebuildPlanes(p, type) {
     const q = p * p + p + 1;
     const array = Array.from({ length: q }, (_, i) => i);
@@ -34,116 +46,76 @@ function rebuildPlanes(p, type) {
             aff.push(adata);
         }
     }
-    if (type === "affine") {
-        aff.shift();
-        return { blocks: aff, count: p * p };
-    }
-    return { blocks: proj, count: q };
+    return (type === "affine") ? { blocks: aff.slice(1), count: p * p } : { blocks: proj, count: q };
 }
 
-// 野菜入力欄の生成
 function generate() {
-    const pElem = document.getElementById("pSelect");
-    const tElem = document.getElementById("planeType");
-    if (!pElem || !tElem) return;
-
-    currentP = Number(pElem.value);
-    currentType = tElem.value;
+    currentP = Number(document.getElementById("pSelect").value);
+    currentType = document.getElementById("planeType").value;
     const isEn = document.documentElement.lang === "en";
-
     const result = rebuildPlanes(currentP, currentType);
     currentBlocks = result.blocks;
 
     const tbody = document.querySelector("#vegTable tbody");
     tbody.innerHTML = "";
-
     for (let i = 0; i < result.count; i++) {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${i}</td>
             <td><select class="fam-sel"><option value="">${isEn ? 'Select▼' : '選択▼'}</option>${familyCandidates.map(f => `<option value="${f}">${f}</option>`).join("")}</select></td>
-            <td><select class="veg-sel"><option value="">${isEn ? '(Family first)' : '（科を選択）'}</option></select></td>
+            <td><select class="veg-sel"><option value="">${isEn ? '(Wait)' : '（科を選択）'}</option></select></td>
         `;
-
-        const famSel = tr.querySelector(".fam-sel");
-        const vegSel = tr.querySelector(".veg-sel");
-
-        famSel.addEventListener("change", () => {
-            const fam = famSel.value;
-            const veggies = familyToVeg[fam] || [];
-            vegSel.innerHTML = veggies.map(v => `<option value="${v}">${v}</option>`).join("") || `<option value="">-</option>`;
-            showFamilyInfo(fam);
-        });
+        const fSel = tr.querySelector(".fam-sel"), vSel = tr.querySelector(".veg-sel");
+        fSel.onchange = () => {
+            const list = familyToVeg[fSel.value] || [];
+            vSel.innerHTML = list.map(v => `<option value="${v}">${v}</option>`).join("") || `<option value="">-</option>`;
+            showFamilyInfo(fSel.value);
+        };
         tbody.appendChild(tr);
     }
     document.getElementById("setupArea").style.display = "block";
+    document.getElementById("rotation").innerHTML = "";
 }
 
 function showFamilyInfo(fam) {
     const box = document.getElementById("familyInfoBox");
     if (!familyInfo[fam]) { box.style.display = "none"; return; }
-    const info = familyInfo[fam];
     const isEn = document.documentElement.lang === "en";
-    box.innerHTML = isEn 
-        ? `<b>【${fam}】</b> ${info.desc} | Soil: ${info.soil}`
-        : `<b>【${fam}の情報】</b> ${info.desc} | 土壌: ${info.soil}`;
+    box.innerHTML = `<b>【${fam}】</b> ${familyInfo[fam].desc} | ${isEn ? 'Soil':'土'}: ${familyInfo[fam].soil}`;
     box.style.display = "block";
 }
 
-// --- 収支計算ロジック ---
 function makeSchedule() {
     const isEn = document.documentElement.lang === "en";
     const vegElements = Array.from(document.querySelectorAll(".veg-sel"));
     const famElements = Array.from(document.querySelectorAll(".fam-sel"));
-    const vegData = vegElements.map((sel, idx) => ({
-        name: sel.value || (isEn ? `Plot ${idx}` : `区画${idx}`),
-        family: famElements[idx].value
-    }));
+    const vegData = vegElements.map((sel, i) => ({ name: sel.value || (isEn?`P${i}`:`区画${i}`), family: famElements[i].value }));
 
     const ul = document.getElementById("rotation");
     ul.innerHTML = "";
+    let balances = new Array(vegData.length).fill(0);
 
-    // 地力収支の配列を用意
-    let soilBalances = new Array(vegData.length).fill(0);
-
-    // スケジュール生成と同時にスコアを加算
     currentBlocks.forEach((block, y) => {
         block.forEach(pIdx => {
-            const fam = vegData[pIdx].family;
-            if (familyStats[fam]) {
-                soilBalances[pIdx] += familyStats[fam].n_score;
-            }
+            const score = commonFamilyStats[vegData[pIdx].family]?.n_score || 0;
+            balances[pIdx] += score;
         });
-
         const li = document.createElement("li");
-        const label = isEn ? `Cycle ${y + 1}` : `${y + 1}番目のサイクル`;
-        li.textContent = `【${label}】\n` + block.map(id => vegData[id].name).join(" → ");
+        li.textContent = `【${isEn?'Cycle':'サイクル'} ${y+1}】\n` + block.map(id => vegData[id].name).join(" → ");
         ul.appendChild(li);
     });
 
-    // 解析結果を一番上に表示
-    displayAnalysis(soilBalances, isEn);
+    displayAnalysis(balances, isEn);
 }
 
 function displayAnalysis(balances, isEn) {
     const ul = document.getElementById("rotation");
-    const analysisLi = document.createElement("li");
-    
-    const totalBalance = balances.reduce((a, b) => a + b, 0);
-    const avgBalance = (totalBalance / balances.length).toFixed(1);
-    const isSustainable = avgBalance <= 0; // 0未満を目指す
-
-    analysisLi.style.background = isSustainable ? "#e8f5e9" : "#fff3e0";
-    analysisLi.style.border = isSustainable ? "2px solid #4caf50" : "2px solid #ff9800";
-    
-    if (isEn) {
-        const statusMsg = isSustainable ? "<span style='color:green;'>✅ Soil Accumulation Mode</span>" : "<span style='color:red;'>⚠️ Soil Depletion Mode</span>";
-        analysisLi.innerHTML = `<strong>【Soil Fertility Analysis】</strong><br>Result: ${statusMsg}<br>Avg Balance: <b>${avgBalance}</b><br>
-        <p>${avgBalance < 0 ? "💡 Ideal cycle." : "💡 Warning: Consider adding more Legumes (Fabaceae) to fix nitrogen."}</p>`;
-    } else {
-        const statusMsg = isSustainable ? "<span style='color:green;'>✅ 地力蓄積型（持続可能）</span>" : "<span style='color:red;'>⚠️ 地力消費型（肥料不足リスク）</span>";
-        analysisLi.innerHTML = `<strong>【地力収支解析結果】</strong><br>判定: ${statusMsg}<br>平均収支: <b>${avgBalance}</b><br>
-        <p>${avgBalance < 0 ? "💡 理想的な循環です。" : "💡 警告: 収支がプラスです。マメ科を増やして窒素を固定してください。"}</p>`;
-    }
-    ul.prepend(analysisLi);
+    const avg = (balances.reduce((a, b) => a + b, 0) / balances.length).toFixed(1);
+    const ok = avg <= 0;
+    const li = document.createElement("li");
+    li.style.background = ok ? "#e8f5e9" : "#fff3e0";
+    li.style.border = `2px solid ${ok ? '#4caf50' : '#ff9800'}`;
+    li.innerHTML = `<strong>${isEn?'Analysis':'解析結果'}</strong>: ${ok ? '✅ Sustainable' : '⚠️ Depleting'}<br>
+    Avg: ${avg} (Target: <0)<br>${avg < 0 ? '💡 Good!' : '💡 Need Legumes!'}`;
+    ul.prepend(li);
 }
