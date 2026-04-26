@@ -79,7 +79,6 @@ function generate() {
     document.getElementById("setupArea").style.display = "block";
 }
 
-// 共通の情報表示
 function showFamilyInfo(fam) {
     const box = document.getElementById("familyInfoBox");
     if (!familyInfo[fam]) { box.style.display = "none"; return; }
@@ -91,7 +90,7 @@ function showFamilyInfo(fam) {
     box.style.display = "block";
 }
 
-// スケジュール計算
+// --- 収支計算ロジック ---
 function makeSchedule() {
     const isEn = document.documentElement.lang === "en";
     const vegElements = Array.from(document.querySelectorAll(".veg-sel"));
@@ -104,10 +103,47 @@ function makeSchedule() {
     const ul = document.getElementById("rotation");
     ul.innerHTML = "";
 
+    // 地力収支の配列を用意
+    let soilBalances = new Array(vegData.length).fill(0);
+
+    // スケジュール生成と同時にスコアを加算
     currentBlocks.forEach((block, y) => {
+        block.forEach(pIdx => {
+            const fam = vegData[pIdx].family;
+            if (familyStats[fam]) {
+                soilBalances[pIdx] += familyStats[fam].n_score;
+            }
+        });
+
         const li = document.createElement("li");
         const label = isEn ? `Cycle ${y + 1}` : `${y + 1}番目のサイクル`;
         li.textContent = `【${label}】\n` + block.map(id => vegData[id].name).join(" → ");
         ul.appendChild(li);
     });
+
+    // 解析結果を一番上に表示
+    displayAnalysis(soilBalances, isEn);
+}
+
+function displayAnalysis(balances, isEn) {
+    const ul = document.getElementById("rotation");
+    const analysisLi = document.createElement("li");
+    
+    const totalBalance = balances.reduce((a, b) => a + b, 0);
+    const avgBalance = (totalBalance / balances.length).toFixed(1);
+    const isSustainable = avgBalance <= 0; // 0未満を目指す
+
+    analysisLi.style.background = isSustainable ? "#e8f5e9" : "#fff3e0";
+    analysisLi.style.border = isSustainable ? "2px solid #4caf50" : "2px solid #ff9800";
+    
+    if (isEn) {
+        const statusMsg = isSustainable ? "<span style='color:green;'>✅ Soil Accumulation Mode</span>" : "<span style='color:red;'>⚠️ Soil Depletion Mode</span>";
+        analysisLi.innerHTML = `<strong>【Soil Fertility Analysis】</strong><br>Result: ${statusMsg}<br>Avg Balance: <b>${avgBalance}</b><br>
+        <p>${avgBalance < 0 ? "💡 Ideal cycle." : "💡 Warning: Consider adding more Legumes (Fabaceae) to fix nitrogen."}</p>`;
+    } else {
+        const statusMsg = isSustainable ? "<span style='color:green;'>✅ 地力蓄積型（持続可能）</span>" : "<span style='color:red;'>⚠️ 地力消費型（肥料不足リスク）</span>";
+        analysisLi.innerHTML = `<strong>【地力収支解析結果】</strong><br>判定: ${statusMsg}<br>平均収支: <b>${avgBalance}</b><br>
+        <p>${avgBalance < 0 ? "💡 理想的な循環です。" : "💡 警告: 収支がプラスです。マメ科を増やして窒素を固定してください。"}</p>`;
+    }
+    ul.prepend(analysisLi);
 }
