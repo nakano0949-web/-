@@ -2,38 +2,26 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>輪作スケジュール</title>
+    <title>輪作計算機</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h2>輪作スケジュール生成（日本語版）</h2>
+    <h2>輪作スケジュール生成</h2>
     <div class="controls">
         <select id="planeType"><option value="affine">アフィン平面</option><option value="projective">射影平面</option></select>
         <select id="pSelect"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select>
-        <button onclick="generate()">入力欄を生成</button>
+        <button onclick="generate()">入力欄作成</button>
     </div>
     <div id="setupArea" style="display:none;">
         <table id="vegTable"><thead><tr><th>ID</th><th>科</th><th>野菜</th></tr></thead><tbody></tbody></table>
         <div id="familyInfoBox"></div>
-        <button onclick="makeSchedule()">スケジュール生成</button>
+        <button onclick="makeSchedule()" style="background:#2196F3; color:white;">解析・スケジュール生成</button>
         <ul id="rotation"></ul>
     </div>
-
     <script>
-        // 日本語データ
         const familyCandidates = ["ナス科","アブラナ科","マメ科","イネ科","ウリ科"];
-        const familyToVeg = {
-            "ナス科":["トマト","ナス","ピーマン"],
-            "アブラナ科":["キャベツ","大根","ブロッコリー"],
-            "マメ科":["枝豆","ソラマメ"],
-            "イネ科":["トウモロコシ"],
-            "ウリ科":["キュウリ","カボチャ"]
-        };
-        const familyInfo = {
-            "ナス科":{desc:"3〜4年あける",soil:"弱酸性"},
-            "アブラナ科":{desc:"2〜3年あける",soil:"pH6.5以上"}
-        };
-        const familyStats = {"ナス科":{n_score:15},"アブラナ科":{n_score:12},"マメ科":{n_score:-10}};
+        const familyToVeg = {"ナス科":["トマト","ナス"],"アブラナ科":["キャベツ","大根"],"マメ科":["枝豆"],"イネ科":["トウモロコシ"],"ウリ科":["キュウリ"]};
+        const familyInfo = {"ナス科":{desc:"3〜4年空ける",soil:"弱酸性"},"アブラナ科":{desc:"2〜3年空ける",soil:"pH6.5"}};
     </script>
     <script src="script.js"></script>
 </body>
