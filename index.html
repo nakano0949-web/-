@@ -2,61 +2,27 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>輪作スケジュール生成（アフィン / 射影）</title>
+    <title>輪作計算機</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<h2>ブロックデザインPG(2,p)AG(2,p)・輪作スケジュール生成アプリ</h2>
-
-<div class="desc">
-  <strong>【プロトタイプ】</strong><br>
-  <ul>
-    <li><b>アフィン平面 AG(2,p)</b>: p²個の野菜をp+1年で回します。1年をp本の畝に分割。</li>
-    <li><b>射影平面 PG(2,p)</b>: p²+p+1個の野菜を使い、1年（4季節など）の全組合せを網羅します。</li>
-    <li><strong>※相性のいい野菜でブロックを作ってください</strong></li>
-  </ul>
-</div>
-
-<div class="controls">
-  <div>
-    <p>1. 平面タイプを選択</p>
-    <select id="planeType">
-      <option value="affine">アフィン平面 AG(2,p)</option>
-      <option value="projective">射影平面 PG(2,p)</option>
-    </select>
-  </div>
-  <div>
-    <p>2. p を選択（素数）</p>
-    <select id="pSelect">
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="5">5</option>
-    </select>
-  </div>
-</div>
-
-<p><button onclick="generate()">野菜入力欄を生成</button></p>
-
-<div id="setupArea" style="display:none;">
-  <h3>3. 野菜と科の入力</h3>
-  <table id="vegTable">
-    <thead>
-      <tr><th># (ID)</th><th>科を選択</th><th>野菜を選択</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div id="familyInfoBox"></div>
-
-  <p style="margin-top:20px;">
-    <button onclick="makeSchedule()" style="background:#2196F3;">4. 輪作スケジュールを生成</button>
-  </p>
-
-  <h3>生成されたスケジュール</h3>
-  <ul id="rotation"></ul>
-</div>
-
-<script src="script.js"></script>
+    <h2>輪作スケジュール生成</h2>
+    <div class="controls">
+        <select id="planeType"><option value="affine">アフィン平面</option><option value="projective">射影平面</option></select>
+        <select id="pSelect"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select>
+        <button onclick="generate()">入力欄作成</button>
+    </div>
+    <div id="setupArea" style="display:none;">
+        <table id="vegTable"><thead><tr><th>ID</th><th>科</th><th>野菜</th></tr></thead><tbody></tbody></table>
+        <div id="familyInfoBox"></div>
+        <button onclick="makeSchedule()" style="background:#2196F3; color:white;">解析・スケジュール生成</button>
+        <ul id="rotation"></ul>
+    </div>
+    <script>
+        const familyCandidates = ["ナス科","アブラナ科","マメ科","イネ科","ウリ科"];
+        const familyToVeg = {"ナス科":["トマト","ナス"],"アブラナ科":["キャベツ","大根"],"マメ科":["枝豆"],"イネ科":["トウモロコシ"],"ウリ科":["キュウリ"]};
+        const familyInfo = {"ナス科":{desc:"3〜4年空ける",soil:"弱酸性"},"アブラナ科":{desc:"2〜3年空ける",soil:"pH6.5"}};
+    </script>
+    <script src="script.js"></script>
 </body>
 </html>
