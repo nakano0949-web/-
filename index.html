@@ -2,104 +2,39 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>輪作スケジュール生成（アフィン / 射影）</title>
+    <title>輪作スケジュール</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <h2>輪作スケジュール生成（日本語版）</h2>
+    <div class="controls">
+        <select id="planeType"><option value="affine">アフィン平面</option><option value="projective">射影平面</option></select>
+        <select id="pSelect"><option value="2">2</option><option value="3">3</option><option value="5">5</option></select>
+        <button onclick="generate()">入力欄を生成</button>
+    </div>
+    <div id="setupArea" style="display:none;">
+        <table id="vegTable"><thead><tr><th>ID</th><th>科</th><th>野菜</th></tr></thead><tbody></tbody></table>
+        <div id="familyInfoBox"></div>
+        <button onclick="makeSchedule()">スケジュール生成</button>
+        <ul id="rotation"></ul>
+    </div>
 
-<h2>ブロックデザインPG(2,p)AG(2,p)・輪作スケジュール生成アプリ</h2>
-
-<div class="desc">
-  <strong>【プロトタイプ v2.0】</strong>
-  <ul>
-    <li><b>アフィン平面 AG(2,p)</b>: p²個の野菜をp+1年で回します。</li>
-    <li><b>射影平面 PG(2,p)</b>: 全組合せを網羅し、連作障害を極限まで防ぎます。</li>
-  </ul>
-</div>
-
-<div class="controls">
-  <div>
-    <p>1. 平面タイプを選択</p>
-    <select id="planeType">
-      <option value="affine">アフィン平面 AG(2,p)</option>
-      <option value="projective">射影平面 PG(2,p)</option>
-    </select>
-  </div>
-  <div>
-    <p>2. p を選択（素数）</p>
-    <select id="pSelect">
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="5">5</option>
-    </select>
-  </div>
-</div>
-
-<p><button onclick="generate()">野菜入力欄を生成</button></p>
-
-<div id="setupArea" style="display:none;">
-  <h3>3. 野菜と科の入力</h3>
-  <table id="vegTable">
-    <thead>
-      <tr><th># (ID)</th><th>科を選択</th><th>野菜を選択</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div id="familyInfoBox"></div>
-
-  <p style="margin-top:20px;">
-    <button onclick="makeSchedule()" style="background:#2196F3;">4. 輪作スケジュールを生成</button>
-  </p>
-
-  <h3>生成されたスケジュール</h3>
-  <ul id="rotation"></ul>
-</div>
-
-<script>
-// --- 日本語版用のデータ定義 ---
-const familyCandidates = ["ナス科","アブラナ科","マメ科","イネ科","ヒユ科","セリ科","キク科","ウリ科","バラ科","シソ科","ヒガンバナ科","ショウガ科","サトイモ科","ヒルガオ科","アオイ科"];
-
-const familyToVeg = {
-  "ナス科": ["トマト","ナス","ピーマン","ジャガイモ"],
-  "アブラナ科": ["キャベツ","白菜","ブロッコリー","大根"],
-  "マメ科": ["枝豆","インゲン","ソラマメ"],
-  "イネ科": ["トウモロコシ","麦"],
-  "ヒユ科": ["ほうれん草"],
-  "セリ科": ["ニンジン","パセリ"],
-  "キク科": ["レタス","ゴボウ"],
-  "ウリ科": ["キュウリ","スイカ","カボチャ"],
-  "バラ科": ["イチゴ"],
-  "シソ科": ["バジル","シソ"],
-  "ヒガンバナ科": ["ネギ","玉ねぎ","にんにく"],
-  "ショウガ科": ["ショウガ"],
-  "サトイモ科": ["サトイモ"],
-  "ヒルガオ科": ["サツマイモ"],
-  "アオイ科": ["オクラ"]
-};
-
-const familyInfo = {
-  "ナス科": { desc:"連作障害が強い。3〜4年空ける。", soil:"弱酸性" },
-  "アブラナ科": { desc:"根こぶ病に注意。2〜3年空ける。", soil:"pH6.5以上" },
-  "マメ科": { desc:"窒素固定で土を肥やす。", soil:"乾燥気味" }
-};
-
-const familyStats = {
-  "マメ科": { n_score: -10 },
-  "ナス科": { n_score: 15 },
-  "アブラナ科": { n_score: 12 },
-  "イネ科": { n_score: 5 },
-  "ウリ科": { n_score: 10 },
-  "ヒガンバナ科": { n_score: 2 },
-  "キク科": { n_score: 3 },
-  "セリ科": { n_score: 4 },
-  "ヒユ科": { n_score: 6 },
-  "シソ科": { n_score: 2 },
-  "ヒルガオ科": { n_score: 8 },
-  "アオイ科": { n_score: 10 }
-};
-</script>
-
-<script src="script.js"></script>
+    <script>
+        // 日本語データ
+        const familyCandidates = ["ナス科","アブラナ科","マメ科","イネ科","ウリ科"];
+        const familyToVeg = {
+            "ナス科":["トマト","ナス","ピーマン"],
+            "アブラナ科":["キャベツ","大根","ブロッコリー"],
+            "マメ科":["枝豆","ソラマメ"],
+            "イネ科":["トウモロコシ"],
+            "ウリ科":["キュウリ","カボチャ"]
+        };
+        const familyInfo = {
+            "ナス科":{desc:"3〜4年あける",soil:"弱酸性"},
+            "アブラナ科":{desc:"2〜3年あける",soil:"pH6.5以上"}
+        };
+        const familyStats = {"ナス科":{n_score:15},"アブラナ科":{n_score:12},"マメ科":{n_score:-10}};
+    </script>
+    <script src="script.js"></script>
 </body>
 </html>
